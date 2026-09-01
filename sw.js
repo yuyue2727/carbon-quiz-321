@@ -1,0 +1,63 @@
+const CACHE_NAME = "carbon-quiz-github-pages-v1";
+const assetUrl = (path) => new URL(path, self.location.href).href;
+const HOME_URL = assetUrl("./");
+const APP_SHELL = [
+  HOME_URL,
+  assetUrl("./index.html"),
+  assetUrl("./app.js"),
+  assetUrl("./styles.css"),
+  assetUrl("./manifest.webmanifest"),
+  assetUrl("./pwa-192.png"),
+  assetUrl("./pwa-512.png"),
+  assetUrl("./apple-touch-icon.png"),
+];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim()),
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(HOME_URL, copy));
+          return response;
+        })
+        .catch(() => caches.match(HOME_URL)),
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(request).then(
+      (cached) =>
+        cached ||
+        fetch(request).then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        }),
+    ),
+  );
+});
+

@@ -1,4 +1,4 @@
-const CACHE_NAME = "carbon-quiz-github-pages-v1";
+const CACHE_NAME = "carbon-quiz-github-pages-v2";
 const assetUrl = (path) => new URL(path, self.location.href).href;
 const HOME_URL = assetUrl("./");
 const APP_SHELL = [
@@ -60,4 +60,3 @@ self.addEventListener("fetch", (event) => {
     ),
   );
 });
-
